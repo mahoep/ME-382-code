@@ -8,37 +8,37 @@
  * https://github.com/goodmajo/
  */
 
-
-
 #include <MotorDrv.h> // Sweet custom class
 #include <Servo.h>
 
 #define ch2_INPUT 2 // right stick y axis
 #define ch3_INPUT 3 // left stick y axis
-#define ch5_INPUT 4 // channel 5 pin number
-#define ch6_INPUT 5  //channel 6 pin number
+#define ch5_INPUT 5 // channel 5 pin number
+#define ch6_INPUT 6  //channel 6 pin number
 
 // Define floor and ceiling values for the transmitter here. MUST DETERMINE THESE ON YOUR OWN! They vary from transmitter to transmitter. These values also might change depending on the reciever. Always check these values after purchasing new a new transmitter or receiver.
 #define transMin 950
 #define transMax 1890
 #define range 927
 
+#define channel_5 5    //channel 5 pin number
+#define channel_6 6    //channel 6 pin number
+
 // right motor driver
-#define m1pwmr 9  // Right Side PWM pin number
-#define m1pwml 8   // Left PWM pin number
-#define m1enr  27 // Right side enable pin number
-#define m1enl  29 // Left side enable pin number
+#define m1pwmr 22   // Right Side PWM pin number
+#define m1pwml 24   // Left PWM pin number
+#define m1enr  26 // Right side enable pin number
+#define m1enl  28 // Left side enable pin number
 
 
 // Left motor driver
-#define m2pwmr 7   // Right Side PWM
-#define m2pwml 6   // Left PWM
-#define m2enr  40 // Right side enable
-#define m2enl  42   // Left side enable
+#define m2pwmr 23   // Right Side PWM
+#define m2pwml 25   // Left PWM
+#define m2enr  27 // Right side enable
+#define m2enl  29   // Left side enable
 
 #define fan 51      // fan control pin number
 #define compressor 50 // air compressor pin number
-
 
 // xmchn = "transmitter channel n". This is where I'll store transmitter channel values, which will then be changed into usable control values.
 int rightStick;     // right stick
@@ -47,7 +47,6 @@ int ch5mode;
 int ch6mode;
 int barrelState;   
 int triggerState;
-int pressurized = 0;
 
 MotorDrv robot ; // define class 
 Servo barrel;   // define servo class name
@@ -74,11 +73,10 @@ void setup() {
   pinMode(m2enr, OUTPUT) ;
 
   //BarrelServo
-  barrel.attach(13);
- 
+  barrel.attach(40);
  
   // Trigger servo
-  trigger.attach(12);
+  trigger.attach(41);
  
   // Fan
   pinMode(fan, OUTPUT);
@@ -89,70 +87,61 @@ void setup() {
 }
 
 void DriveServos()
-
+{
+  if (triggerState == 1) {
+    trigger.write(90);
+  }
+  else {
+    trigger.write(5);
+  }
+    
+  if (barrelState == 1) {
+    trigger.write(90);
+  }
+  else {
+    barrel.write(5);
+  }
+}
 void loop() {
  
   rightStick = pulseIn(ch2_INPUT, HIGH, 100000);
   leftStick = pulseIn(ch3_INPUT, HIGH, 100000);
-  ch5mode = pulseIn(ch5_INPUT, HIGH, 100000) ;
-  ch6mode = pulseIn(ch6_INPUT, HIGH, 100000);
-  
-  if (rightStick > 1400 && rightStick < 1550){
-    rightStick = 1420;
-    }
-  else{
-    rightStick = rightStick;
-    }
-  
-   if (leftStick > 1400 && leftStick < 1550){
-    leftStick = 1420;
-    }
-  else {
-    leftStick = leftStick;
-    }
-// this stuff controls air compressor operation and firing 
-  if ((ch5mode >1700)) { // Switch C in backwards position
-  
-    digitalWrite(compressor, HIGH); // compressor off
-    trigger.write(110);  // firing servo in fire state
+  ch5mode = pulseIn(channel_5, HIGH, 100000) ;
+  ch6mode = pulseIn(channel_6, HIGH, 100000);
+
+  if ((ch5mode >1700)) // Switch C in backwards position
+  {
+  digitalWrite(compressor, LOW); // compressor off
+  triggerState = 1;           // firing servo in fire state
   }
- 
   else if ((ch5mode > 1200) && (ch5mode < 1600)) // Switch C in middle position
-    {
-    trigger.write(10);     // firing servo in rest state
-    digitalWrite(compressor, LOW);
-    }
-    
- 
-  else { // Siwtch C forward most position
-    digitalWrite(compressor, HIGH);  //compressor off
-    trigger.write(10);             // firing servo in rest state
-    }
-    
-// this stuff controls the fan and barrel position
-  if ((ch6mode < 1500)){ ///Switch A in forward state
-    digitalWrite(fan, LOW);  //fan on
-    barrel.write(48);     // barrel in pick up state
-    }
-  else {  /// Switch A in backward state
-   
-   digitalWrite(fan, HIGH); // fan off
-    barrel.write(110);  // barrel in firing state
-    }
+  {
+  digitalWrite(compressor, HIGH);  // copmressor on
+  triggerState = 0;             // firing servo in rest state
+  }
+  else // Siwtch C forward most position
+  {
+  digitalWrite(compressor, LOW);  //compressor off
+  triggerState = 0;             // firing servo in rest state
+  }
+
+  if ((ch6mode < 1200)) ///Switch A in forward state
+  {
+    digitalWrite(fan, LOW);  //fan off
+    barrelState = 1;      // barrel in firing state
+  }
+  else  /// Switch A in backward state
+   {
+   digitalWrite(fan, HIGH); // fan on
+    barrelState = 0;        // barrel in pick up state
+  }
 
   // Usage: MotorDrv.IBT( <left transmitter channel>, <right transmitter channel>, <motor 1 Lpwm>, <motor 1 Rpwm>, <motor 1 L enable >, <motor 1 R enable>, <motor 2 Lpwm>, <motor 2 Rpwm>, motor 2 L enable >, <motor 2 R enable>, <% of max possible motor strength>)
-  robot.IBT2(transMax, transMin, leftStick, rightStick, m1pwml, m1pwmr, m1enl, m1enr, m2pwml, m2pwmr, m2enl, m2enr, 100);
+  robot.IBT2(transMin, transMax, leftStick, rightStick, m1pwml, m1pwmr, m1enl, m1enr, m2pwml, m2pwmr, m2enl, m2enr, 100);
 
   
-  Serial.print(rightStick);
+  Serial.print(ch5mode);
   Serial.print("\n");
-  //
-  Serial.print(leftStick);
-  Serial.print("\n");
-  
   
 }
-
-
-
 
