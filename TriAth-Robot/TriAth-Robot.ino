@@ -43,13 +43,12 @@
 // xmchn = "transmitter channel n". This is where I'll store transmitter channel values, which will then be changed into usable control values.
 int rightStick;     // right stick
 int leftStick;      //left stick
-int ch5mode;
-int ch6mode;
+int ch5mode;        // channel 5 operating state
+int ch6mode;        // channel 6 operating state
 int barrelState;   
 int triggerState;
-int pressurized = 0;
 
-MotorDrv robot ; // define class 
+MotorDrv robot ; // define function name from MotorDrv library
 Servo barrel;   // define servo class name
 Servo trigger;
 
@@ -89,14 +88,14 @@ void setup() {
 }
 
 void DriveServos()
-
+// this used to have conditionals with the barrel state and trigger state but was deemed unnecessary
 void loop() {
  
-  rightStick = pulseIn(ch2_INPUT, HIGH, 100000);
+  rightStick = pulseIn(ch2_INPUT, HIGH, 100000); // converts radio transmittion to readable PWM
   leftStick = pulseIn(ch3_INPUT, HIGH, 100000);
   ch5mode = pulseIn(ch5_INPUT, HIGH, 100000) ;
   ch6mode = pulseIn(ch6_INPUT, HIGH, 100000);
-  
+  // This is a small deadzone so the motors won't drive
   if (rightStick > 1400 && rightStick < 1550){
     rightStick = 1420;
     }
@@ -132,7 +131,7 @@ void loop() {
 // this stuff controls the fan and barrel position
   if ((ch6mode < 1500)){ ///Switch A in forward state
     digitalWrite(fan, LOW);  //fan on
-    barrel.write(48);     // barrel in pick up state
+    barrel.write(53);     // barrel in pick up state
     }
   else {  /// Switch A in backward state
    
